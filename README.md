@@ -1,5 +1,6 @@
-# Practice_with_Leetcode
+# Practice_with_Leetcode_2020
 <ol>
 <li> Recursion I </li>
-<p>Came up with a solution but didn't use recursion.</p>
+  <p>1.7 22:30</p>
+  <p>Came up with a solution but didn't use recursion.</p>
 </ol>
