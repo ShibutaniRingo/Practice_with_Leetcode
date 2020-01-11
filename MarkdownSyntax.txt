@@ -39,3 +39,5 @@
 </blockquote>
 
 <p>行間<abbr title="Hypertext Markup Language">HTML</abbr>亦受支援。</p>
+
+<font color=6位16进制>
