@@ -150,4 +150,31 @@ with average as (
      join average on s.pay_date = average.pay_date
      join total_avg on s.pay_date = total_avg.pay_date
      group by average.department_id,s.pay_date
-     order by s.pay_date desc;
+     order by s.pay_date desc, department asc;
+     
+- Students Report By Geography
+select s1.name as 'America', s2.name as 'Asia', s3.name as 'Europe'
+from student s1, student s2, student s3
+    where s1.continent = 'America' 
+        and s2.continent = 'Asia'
+        and s3.continent = 'Europe' ;
+(这个是错的，没有空格子，而是返回了重复的名字，所以需要“行号”来留空)
+(行号必须是行最多的那个州！)
+with America as(
+    select row_number() over (order by s.name) as 'id', s.name
+    from student s 
+        where s.continent = 'America'
+),Asia as(
+    select row_number() over (order by s.name) as 'id', s.name
+    from student s 
+        where s.continent = 'Asia'
+),Europe as(
+    select row_number() over (order by s.name) as 'id', s.name
+    from student s 
+        where s.continent = 'Europe'
+)
+select America.name, Asia.name, Europe.name
+from America
+    full join Asia on America.id = Asia.id //此处用 full join就能保证行号primary key是行最多的那个州
+    full join Europe on America.id = Europe.id;
+
