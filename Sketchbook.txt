@@ -1,0 +1,153 @@
+基本顺序：
+with derived_table1 as(
+), derived_table2 as()
+select
+    case when () then 1
+    else 0
+    end
+from
+    join on
+    where
+    group by
+    order by
+    limit 
+    offset
+;
+
+ - Department top three salaries
+不使用window function:
+select d.Name as 'Department',
+    e.Name as 'Employee',
+    e.Salary
+from Employee e join Department d 
+    on e.DepartmentId = d.Id
+    where (
+        select count(distinct(e2.salary))
+        from Employee e2
+            where e2.DepartmentId = e.DepartmentId 
+                and e2.Salary > e.Salary
+    )  < 3
+    order by e.Salary;
+使用window function的情况(an additional temporary table)：
+with department_rank as (         //创建一张新表
+    select d.Name as 'Department',
+        e.Name as 'Employee',
+        e.Salary
+        dense_rank() over (partition by e.DepartmentId order by e.Salary desc) as 'ranking'
+    from Employee e join Department d 
+        on e.DepartmentId = d.Id  
+) select Department,
+     Employee,
+    e.Salary
+from department_ranking
+    where department_rank.ranking <= 3
+    order by Salary;
+    
+ - 记录每日用户登录行为如何计算MAU（月活用户）：
+with dau as (
+      select date, count(distinct(userid)) as dau
+      from dailysessions ds
+      group by date
+     )
+select date, dau,
+       (select count(distinct user_id) //注意此处mau并不是通过dau的计算得到的，而是重新算了一遍
+        from dailysessions ds
+            where ds.date between date - 29 * interval '1 day' and date
+       ) as mau
+from dau;
+
+ - Trips and users
+Write a SQL query to find the cancellation rate of requests made by unbanned users (both client and driver must be unbanned) between Oct 1, 2013 and Oct 3, 2013:
+select t.Request_at as 'Day',
+    round(
+    (
+    sum(case
+            when (t.Status != 'completed') then 1
+            else 0 
+            end) / count(t.Status)
+    ) 
+    ,2) as 'Cancellation Rate'
+from Trips t
+    join Users u1 on t.Client_Id = u1.Users_Id 
+    join Users u2 on t.Driver_Id = u2.Users_Id //join 两次
+where u1.Banned = 'No' and u2.Banned = 'No' //也可以用and Driver_Id in and Client_Id in
+        and (t.Request_at between '2013-10-01' and '2013-10-03')
+        group by t.Request_at;          //因为要计算每天的cancellation rate
+        //如果不group by 就计算出了一个总的，只返回了一行结果
+或者可以把 valid_user(没有被ban) 和 valid_trip(between 10-01 and 10-03) 做成两张表
+然后再用valid_trip join两次 valid_user
+with valid_user as (
+    select *
+    from Users
+    where u.Banned = 'No'
+), valid_trip as (
+    select * 
+    from Trips
+    where t.Request_at between '2013-10-01' and '2013-10-03'
+)
+select t.Request_at as 'Day',
+round(    
+            sum(case
+            when (t.Status != 'completed') then 1
+            else 0 
+            end) / count(t.Status), 2) as 'Cancellation Rate'
+from valid_trip t
+    join valid_user u1 on t.Driver_Id = u1.Users_Id
+    join valid_user u2 on t.Client_Id = u2.Users_Id
+    group by t.Request_at;
+    //To check an element is not in a set, a full scan of the set is required.
+也可以使用driver_id in (一个subselect) 这种形式描述条件
+
+ - Write a SQL to get the cumulative sum of an employee's salary over a period of 3 months but exclude the most recent month.
+select e1.Id, e1.Month,
+    ifnull(e1.Salary,0) + ifnull(e2.Salary,0) + ifnull(e3.Salary,0) 
+from Employee e1
+    left join Employee e2 on e1.Id = e2.Id and e2.Month = e1.Month-1
+    left join Employee e3 on e1.Id = e3.Id and e3.Month = e1.Month-2
+    where (e1.Id, e1.Month) not in (
+        select e.Id, max(e.Month)
+        from Employee e
+        group by Id
+    )
+    order by e1.Id asc, e1.Month desc;
+    
+ - Human Traffic of Stadium
+Please write a query to display the records which have 3 or more consecutive rows and the amount of people more than 100(inclusive).
+select s1.*
+from stadium s1,
+    stadium s2,
+    stadium s3   //这里如果用join锁死了id=id下面where的条件就会失效
+where 
+    s1.people > 100 and s2.people > 100 and s3.people >100
+    and(
+    (s1.visit_date = s2.visit_date + 1 and s1.visit_date = s3.visit_date + 2 )
+    or
+    (s1.visit_date = s2.visit_date - 1 and s1.visit_date = s3.visit_date + 1)
+    or
+    (s1.visit_date = s2.visit_date - 2 and s1.visit_date = s3.visit_date -1 )
+    );
+
+ - Average Salary: Departments VS Company
+write a query to display the comparison result (higher/lower/same) of the average salary of employees in a department to the company's average salary.
+with average as (
+    select s.pay_date,e1.department_id,
+        avg(s.amount) as avg_salary
+    from salary s
+        join employee e1 on s.employee_id = e1.employee_id
+        group by e1.department_id,s.pay_date
+), total_avg as (
+     select s.pay_date,avg(s.amount) as 'total'
+     from salary s
+             group by s.pay_date
+)
+ select strftime('%Y-%m',s.pay_date) as pay_month,
+    average.department_id,
+    (case when average.avg_salary > total then 'higher'
+             when average.avg_salary < total then 'lower'
+             else 'same'
+    end) as 'comparison'
+ from salary s
+     join average on s.pay_date = average.pay_date
+     join total_avg on s.pay_date = total_avg.pay_date
+     group by average.department_id,s.pay_date
+     order by s.pay_date desc;
