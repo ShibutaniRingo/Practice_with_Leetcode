@@ -178,3 +178,5 @@ from America
     full join Asia on America.id = Asia.id //此处用 full join就能保证行号primary key是行最多的那个州
     full join Europe on America.id = Europe.id;
 
+
+
