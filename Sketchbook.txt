@@ -9,7 +9,7 @@ from
     join on
     where
     group by
-    order by
+    order by    null first/last
     limit 
     offset
 ;
@@ -134,7 +134,7 @@ with average as (
         avg(s.amount) as avg_salary
     from salary s
         join employee e1 on s.employee_id = e1.employee_id
-        group by e1.department_id,s.pay_date
+        group by e1.department_id,s.pay_date     //此处如果不新创建一张表，而是直接用avg，
 ), total_avg as (
      select s.pay_date,avg(s.amount) as 'total'
      from salary s
