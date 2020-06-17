@@ -178,5 +178,58 @@ from America
     full join Asia on America.id = Asia.id //此处用 full join就能保证行号primary key是行最多的那个州
     full join Europe on America.id = Europe.id;
 
+3 tables are there with  many to many relationship (Order and Item) 
+Order table  (OrderId, CustomerId, OrderDate) 
+Item Table (ItemId, Name) 
+Order Item table (OrderId, ItemId) 
+
+Find all customers who purchased items - Kindle and Alexa both (Exclude customers who purchased only 1 item) 
+select distinct(o2.CustomerId), i.ItemId
+from Order_Item_table o1
+    join Order_table o2 on o1.OrderId = o2.OrderId
+    join Item_table i on o1.ItemId on o1.ItemId = i.ItemId
+where (o2.OrderId in (
+    select o1.OrderId
+    from Order_Item_table o1
+        join Item_table i on o1.ItemId on o1.ItemId = i.ItemId
+    where i.Name = 'Kindle'
+) and
+    o2.OrderId in (
+        select o1.OrderId
+        from Order_Item_table o1
+            join Item_table i on o1.ItemId on o1.ItemId = i.ItemId
+        where i.Name = 'Alexa'
+            )
+    );
+
+Find the items in the first purchase for a customer - Print customer id, item id 
+with first_purchase as(
+    select o1.OrderId, 
+        distinct(o2.CustomerId) as 'CustomerId',
+        min(o1.OrderDate) as first_purchase_date
+    from Order_Item_table o1
+        join Order_table o2 on o1.OrderId = o2.OrderId
+    group by o2.CustomerId
+    order by o1.OrderDate)
+select first_purchase.CustomerId, i.ItemId
+from first_purchase
+    join Item_table i on first_purchase.OrderId = i.OrderId;
+
+Delete duplicate rows from the Order table
+Delete from Order_table 
+where Order_table.OrderId not in (
+    select distinct(OrderId)
+    from Order_table
+    );
+
+
+
+
+
+
+
+
+
+
 
 
