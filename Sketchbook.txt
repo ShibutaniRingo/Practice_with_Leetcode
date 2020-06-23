@@ -222,6 +222,27 @@ where Order_table.OrderId not in (
     from Order_table
     );
 
+update Advertiser a
+    left join DailyPay d on a.user_id = d.user_id
+set a.Status = (
+    case
+        when (a.Status = "Existing" or a.Status = "Resurrect") and IfNull(d.user_id ,0)=0 then "Churn"
+        when (a.Status = "Existing" or a.Status = "Resurrect") and IfNull(d.user_id ,0)<>0 then "Existing"
+        #we can use a.Status <> "Churn" here
+        when (a.Status = "Churn") and IfNull(d.user_id ,0)<>0 then "Resurrect"
+        end
+);
+
+insert into Advertiser (user_id, Status)
+    values (
+    select d.user_id, ifnull(a.user_id, "New")
+    from DailyPay d 
+        left join Advertiser a on d.user_id = a.user_id
+    where ifnull(a.user_id, 0) = 0
+    );
+
+
+
 
 
 
