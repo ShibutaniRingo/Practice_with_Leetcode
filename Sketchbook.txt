@@ -1,4 +1,3 @@
-基本顺序：
 with derived_table1 as(
 ), derived_table2 as()
 select
@@ -13,6 +12,14 @@ from
     limit 
     offset
 ;
+
+
+
+
+
+
+
+
 
  - Department top three salaries
 不使用window function:
@@ -53,7 +60,8 @@ select date, dau,
        (select count(distinct user_id) //注意此处mau并不是通过dau的计算得到的，而是重新算了一遍
         from dailysessions ds
             where ds.date between date - 29 * interval '1 day' and date
-       ) as mau
+       ) 
+       sum(dau) over (order by ds.date rows between -29 preceding and current row) as mau
 from dau;
 
  - Trips and users
@@ -241,10 +249,48 @@ insert into Advertiser (user_id, Status)
     where ifnull(a.user_id, 0) = 0
     );
 
+History date, user_id, song_id, tally
+    where you have date, user_id, song_id and count(tally)
+Daily id, user_id, song_id, time_stamp
+    that records in real time when a user listens to a given song
+
+create temperary table 
+
+with daily_sum as (
+    select d.user_id, d.song_id, count(time_stamp) as "tally"
+    from Daily d
+    group by d.song_id
+)
+update History h
+    left join daily_sum on h.user_id = d.user_id and h.song_id  = d.song_id
+set h.tally = (
+    h.tally + d.tally
+    );
+
+with daily_sum as (
+    select d.user_id, d.song_id, count(time_stamp) as "tally"
+    from Daily d
+    group by d.song_id
+)
+insert into History h (user_id, song_id, tally)
+values(
+    select * 
+    from daily_sum
+        left join History h on h.user_id = d.user_id and h.song_id  = d.song_id
+    where ifNull(h.tally,0) = 0
+);
+
+User user_id, name,phone_num
+UserHistory user_id, date, action 
+Output name, phone_num, max(UserHistory.date)
 
 
-
-
+select u.name, u.phone_num, max(uh.date) as max(UserHistory.date)
+    from User u
+    join UserHistory uh on u.user_id = uh.user_id
+    where uh.action = "logged_on" 
+    and uh.date >= date_sub("2020-06-24", interval 30 days);
+    
 
 
 
