@@ -14,8 +14,7 @@ from
 ;
 
 
-
-
+over (partition by order by rows between 29 proceeding and 1 following(/current row))
 
 
 

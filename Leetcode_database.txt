@@ -1,0 +1,26 @@
+185. Department Top Three Salaries
+(1) count(distinct)
+select d.Name as "Department", 
+    e.Name as "Employee",
+    e.Salary
+from Employee e
+    join Department d on e.DepartmentId = d.Id
+    where(
+        select count(distinct(e2.Name))
+        from e2 Employee
+            where e2.Salary > e.Salary 
+                and e2.DepartmentId = e.DepartmentId
+    ) < 3;
+
+(2) create a new table
+with salary_rank as (
+    select e.Id, e.Name as "Employee",
+        e.Salary, e.DepartmentId
+        dense_rank() over (partition by e.DepartmentId order by e.Salary desc) as "rank"
+    from Employee e
+) select d.Name as "Department", 
+    s.Name as "Employee",
+    s.Salary
+from salary_rank s 
+    join Department d on s.DepartmentId = d.Id
+    where s.rank <= 3;
